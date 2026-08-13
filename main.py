@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os  # 👈 تمت إضافة هذا السطر هنا
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import BotCommand  # تم نقله للأعلى لترتيب الاستدعاءات بشكل نظيف
 
 from app.handlers import register_all_routers
 from app.middlewares import (
@@ -22,19 +24,25 @@ from app.middlewares import (
 from app.utils.logging_config import setup_logging
 from config import get_settings
 from database import init_db
-from aiogram.types import BotCommand
+
 logger = logging.getLogger("main")
+
 
 async def set_default_commands(bot):
     commands = [
         BotCommand(command="start", description="تشغيل البوت وبدء الاستخدام"),
-
         # يمكنك إضافة أي أوامر أخرى هنا مستقبلاً
     ]
     await bot.set_my_commands(commands)
+
+
 async def main() -> None:
     setup_logging()
     settings = get_settings()
+
+    # 👈 إنشاء المجلدات الضرورية تلقائياً في السيرفر السحابي (Railway)
+    os.makedirs("data", exist_ok=True)
+    os.makedirs("tmp", exist_ok=True)  # ضروري جداً لعمليات رفع التطبيقات المؤقتة
 
     if not settings.BOT_TOKEN:
         raise SystemExit("❌ BOT_TOKEN غير موجود في ملف .env")
