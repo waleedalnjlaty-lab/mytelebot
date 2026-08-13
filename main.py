@@ -40,9 +40,12 @@ async def main() -> None:
     setup_logging()
     settings = get_settings()
 
-    # 👈 إنشاء المجلدات الضرورية تلقائياً في السيرفر السحابي (Railway)
-    os.makedirs("data", exist_ok=True)
-    os.makedirs("tmp", exist_ok=True)  # ضروري جداً لعمليات رفع التطبيقات المؤقتة
+    # 👈 محاولة إنشاء المجلدات، وتخطي الخطأ إذا كان السيرفر مجانياً (Trial) ومحمياً
+    try:
+        os.makedirs("data", exist_ok=True)
+        os.makedirs("tmp", exist_ok=True)
+    except PermissionError:
+        logger.warning("⚠️ البوت يعمل في بيئة محمية (Trial). سيتم تجاهل إنشاء المجلدات.")
 
     if not settings.BOT_TOKEN:
         raise SystemExit("❌ BOT_TOKEN غير موجود في ملف .env")
