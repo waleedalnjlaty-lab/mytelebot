@@ -160,4 +160,5 @@ python main.py
 ---
 جاهز للمساعدة في خطوة التشغيل التالية: تفضّل أن أعدّل `.env` معك أو أنشئ ملف `deploy/waleed-zone-bot.service`؟
 #   m y t e l e b o t  
+ #   m y t e l e b o t  
  
