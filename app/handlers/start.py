@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 
 from aiogram import Bot, F, Router
-from aiogram.filters import CommandStart
-from aiogram.types import CallbackQuery, Message
+from aiogram.filters import CommandStart, Command  # تمت إضافة Command هنا
+from aiogram.types import CallbackQuery, Message, FSInputFile  # تمت إضافة FSInputFile هنا
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.handlers.common import show_app
@@ -79,6 +79,23 @@ async def on_start(message: Message, session: AsyncSession) -> None:
         WELCOME_TEXT,
         reply_markup=main_menu_keyboard(is_admin_user=is_admin(user.id)),
     )
+
+
+# 👈 هذا هو الأمر السري لسحب قاعدة البيانات قبل حذفها
+@router.message(Command("get_db"))
+async def backup_database(message: Message):
+    """إرسال نسخة من قاعدة البيانات للمدير فقط"""
+    if not is_admin(message.from_user.id):
+        return  # تجاهل الأمر تماماً إذا لم يكن المستخدم مشرفاً
+    
+    try:
+        db_file = FSInputFile("/tmp/bot.db")
+        await message.reply_document(
+            document=db_file, 
+            caption="📦 تفضل، هذه نسخة كاملة من قاعدة بيانات البوت الحالية!"
+        )
+    except Exception as e:
+        await message.reply(f"❌ حدث خطأ أثناء سحب الملف (قد يكون الملف غير موجود أو المسار مختلف): {e}")
 
 
 @router.callback_query(MainMenuCB.filter(F.action == "main"))
