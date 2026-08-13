@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    container_name: waleed_zone_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # احتفظ بقاعدة البيانات على المضيف (ملف واحد فقط، لا نحجب الكود)
+      - ./data/bot.db:/app/bot.db
+      - ./tmp/uploads:/app/tmp/uploads
+      - ./logs:/app/logs
+    networks:
+      - bot-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  bot-network:
+    driver: bridge
