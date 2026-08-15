@@ -53,7 +53,12 @@ from integrations import (
     build_shrankme_client,
     download_telegram_file,
 )
+from app.integrations.imgbb import ImBBUploader
+imgbb_client = ImgBBUploader(api_key="a0a3a3988c0bb1674a8247aa03dcb0c9")
+# عند استلام الصورة
+web_image_url = await imgbb_client.upload_telegram_photo(bot, photo_file_id)
 
+# تمرير web_image_url مع بيانات الحفظ لـ repository
 logger = logging.getLogger(__name__)
 
 router = Router(name="upload")
