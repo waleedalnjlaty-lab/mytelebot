@@ -18,7 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, Text
+
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -46,10 +46,9 @@ class User(Base):
     )
 
     favorites: Mapped[list["Favorite"]] = relationship(
-        back_populates="user", 
+        back_populates="user",
         cascade="all, delete-orphan",
-        primaryjoin="User.telegram_id == Favorite.user_id"
-    
+        primaryjoin="User.telegram_id == Favorite.user_id",
     )
 
 
@@ -65,11 +64,11 @@ class Application(Base):
     platform: Mapped[str | None] = mapped_column(String(50), default=None)
     developer: Mapped[str | None] = mapped_column(String(255), default=None)
     icon_file_id: Mapped[str | None] = mapped_column(String(255), default=None)
+    image_url: Mapped[str | None] = mapped_column(Text, default=None)
     devupload_url: Mapped[str | None] = mapped_column(Text, default=None)
     shrankme_url: Mapped[str | None] = mapped_column(Text, default=None)
     downloads: Mapped[int] = mapped_column(Integer, default=0)
     views: Mapped[int] = mapped_column(Integer, default=0)
-    image_url = Column(String,nullable =True)
     search_text: Mapped[str | None] = mapped_column(Text, index=True, default=None)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     published: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -162,10 +161,11 @@ class Favorite(Base):
 
     user: Mapped["User"] = relationship(
         back_populates="favorites",
-        primaryjoin="User.telegram_id == Favorite.user_id"
+        primaryjoin="User.telegram_id == Favorite.user_id",
     )
 
     __table_args__ = (UniqueConstraint("user_id", "app_id", name="uq_fav"),)
+
 
 class SearchLog(Base):
     __tablename__ = "search_logs"
