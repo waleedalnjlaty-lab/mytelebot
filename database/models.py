@@ -18,7 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, Text
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
