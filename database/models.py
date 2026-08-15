@@ -69,6 +69,7 @@ class Application(Base):
     shrankme_url: Mapped[str | None] = mapped_column(Text, default=None)
     downloads: Mapped[int] = mapped_column(Integer, default=0)
     views: Mapped[int] = mapped_column(Integer, default=0)
+    image_url = Column(String,nullable =True)
     search_text: Mapped[str | None] = mapped_column(Text, index=True, default=None)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     published: Mapped[bool] = mapped_column(Boolean, default=False)
