@@ -28,6 +28,7 @@ from aiogram.types import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.integrations.imgbb import ImgBBUploader
 from app.keyboards.user import cancel_keyboard
 from app.services.upload_service import build_upload_service
 from app.states import UploadStates
@@ -53,15 +54,12 @@ from integrations import (
     build_shrankme_client,
     download_telegram_file,
 )
-from app.integrations.imgbb import ImBBUploader
-imgbb_client = ImgBBUploader(api_key="a0a3a3988c0bb1674a8247aa03dcb0c9")
-# عند استلام الصورة
-web_image_url = await imgbb_client.upload_telegram_photo(bot, photo_file_id)
 
-# تمرير web_image_url مع بيانات الحفظ لـ repository
 logger = logging.getLogger(__name__)
 
 router = Router(name="upload")
+
+imgbb_client = ImgBBUploader(api_key="a0a3a3988c0bb1674a8247aa03dcb0c9")
 
 DIRECT_EXTENSIONS = ('.apk', '.zip', '.rar', '.exe', '.bin', '.7z', '.tar', '.gz', '.ipa', '.pdf', '.iso')
 
@@ -128,7 +126,7 @@ async def _choice_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-# ---------------------------------------------------------------- بدء الرفع (تعديل نفس الرسالة)
+# ---------------------------------------------------------------- بدء الرفع
 @router.callback_query(AppCB.filter(F.action == "upload"))
 async def on_upload_start(
     call: CallbackQuery, state: FSMContext
@@ -191,7 +189,6 @@ async def on_method_shrink(call: CallbackQuery, state: FSMContext) -> None:
 async def on_add_app(
     call: CallbackQuery, state: FSMContext
 ) -> None:
-    """إضافة تطبيق يدويًا بدون رفع ملف (للمالك فقط)."""
     if not _only_admin(call):
         await call.answer("⛔ صلاحية غير متاحة.", show_alert=True)
         return
@@ -528,9 +525,12 @@ async def on_link(message: Message, state: FSMContext) -> None:
 @router.message(UploadStates.waiting_icon)
 async def on_icon(message: Message, state: FSMContext) -> None:
     if message.photo:
-        await state.update_data(icon_file_id=message.photo[-1].file_id)
+        photo_file_id = message.photo[-1].file_id
+        # رفع الصورة تلقائياً لـ ImgBB وأخذ الرابط المباشر
+        web_image_url = await imgbb_client.upload_telegram_photo(message.bot, photo_file_id)
+        await state.update_data(icon_file_id=photo_file_id, image_url=web_image_url)
     else:
-        await state.update_data(icon_file_id=None)
+        await state.update_data(icon_file_id=None, image_url=None)
     await _ask_publish(message, state)
 
 
@@ -547,7 +547,6 @@ async def _choice_value(
     if field == "platform":
         kb = await _choice_keyboard(DEFAULT_CATEGORIES, "upl:cat", "x")
         await state.set_state(UploadStates.waiting_category)
-        # تعديل نفس الرسالة بدلاً من إرسال رسالة جديدة
         await call.message.edit_text("🗂 اختر التصنيف أو اكتبه:", reply_markup=kb)
     elif field == "category":
         if data.get("manual") and not data.get("link"):
@@ -588,7 +587,7 @@ async def on_custom_choice(call: CallbackQuery, state: FSMContext) -> None:
 @router.callback_query(F.data == "upl:skipicon")
 async def on_skip_icon(call: CallbackQuery, state: FSMContext) -> None:
     await call.answer()
-    await state.update_data(icon_file_id=None)
+    await state.update_data(icon_file_id=None, image_url=None)
     await _ask_publish(call.message, state)
 
 
@@ -626,7 +625,6 @@ async def _show_preview(message: Message, state: FSMContext) -> None:
     )
     await state.set_state(UploadStates.waiting_publish_choice)
     try:
-        # إذا كانت الرسالة الأصلية تحتوي على صورة معاينة أو نص
         if message.photo:
             await message.edit_caption(caption="\n".join(lines), reply_markup=kb)
             return
@@ -642,7 +640,7 @@ async def _show_preview(message: Message, state: FSMContext) -> None:
             await message.answer("\n".join(lines), reply_markup=kb)
 
 
-# ---------------------------------------------------------------- النشر (مع زر تحميل تطبيق آخر)
+# ---------------------------------------------------------------- النشر
 @router.callback_query(AppCB.filter(F.action == "confirm"))
 async def on_confirm_app(
     call: CallbackQuery, state: FSMContext, session: AsyncSession
@@ -670,6 +668,7 @@ async def on_confirm_app(
         category=data.get("category"),
         platform=data.get("platform"),
         icon_file_id=data.get("icon_file_id"),
+        image_url=data.get("image_url"),
         devupload_url=devupload_url,
         shrankme_url=shrankme_url,
         search_text=build_search_text(
@@ -695,7 +694,6 @@ async def on_confirm_app(
     else:
         success_text += "\n⚠️ لا يوجد رابط تحميل متاح."
 
-    # أزرار رسالة النجاح متضمنة زر "📥 تحميل تطبيق اخر"
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="📋 نسخ الرابط", url=final_url)] if final_url else [],
@@ -704,7 +702,6 @@ async def on_confirm_app(
         ]
     )
     
-    # إرسال رسالة مستقلة ثانية خاصة بنجاح النشر
     await call.message.answer(success_text, reply_markup=kb)
 
     if data.get("publish_choice") == "yes":
