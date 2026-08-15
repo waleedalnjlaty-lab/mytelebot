@@ -28,7 +28,8 @@ from aiogram.types import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.integrations.imgbb import ImgBBUploader
+# ضع هذا بدلاً منه:
+from integrations.imgbb import ImgBBUploader
 from app.keyboards.user import cancel_keyboard
 from app.services.upload_service import build_upload_service
 from app.states import UploadStates
