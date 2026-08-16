@@ -6,6 +6,7 @@ import logging
 
 from aiogram import Bot, F, Router
 from aiogram.filters import Command
+from aiogram.filters.chat_member_updated import ChatMemberUpdatedFilter, JOIN_TRANSITION
 from aiogram.types import ChatMemberUpdated, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +19,10 @@ router = Router(name="group")
 
 group_service = GroupService()
 
-MODERATION_COMMANDS = {"ban", "unban", "mute", "unmute", "warn", "del", "pin", "warns", "promote", "demote", "lock", "unlock", "id", "commands"}
+MODERATION_COMMANDS = {
+    "ban", "unban", "mute", "unmute", "warn", "del", "pin",
+    "warns", "promote", "demote", "lock", "unlock", "id", "commands"
+}
 
 # خريطة الكلمات العربية المباشرة للرد السريع
 ARABIC_MOD_KEYWORDS = {
@@ -156,12 +160,18 @@ async def on_admins(message: Message) -> None:
     await message.reply("\n".join(lines))
 
 
-@router.chat_member()
+@router.chat_member(ChatMemberUpdatedFilter(JOIN_TRANSITION))
 async def on_member_joined(
     event: ChatMemberUpdated, session: AsyncSession
 ) -> None:
     """الترحيب بالعضو الجديد (إن كان مفعّلًا)."""
-    await group_service.welcome_if_needed(event.bot, session, event)
+    if event.new_chat_member is None:
+        return
+    try:
+        await group_service.welcome_if_needed(event.bot, session, event)
+    except Exception as exc:
+        logger.error("Welcome message error: %s", exc)
+
 
 @router.message(F.chat.type.in_(["group", "supergroup"]))
 async def on_group_message(
@@ -216,11 +226,9 @@ async def on_group_message(
                     if not message.text.startswith("/"):
                         new_text = f"/{action}"
 
-                # الحل السحري: إنشاء نسخة جديدة من الرسالة مع النص المُعدّل لتجاوز تجميد البيانات
                 modified_message = message.model_copy(update={"text": new_text})
-
                 await _execute_moderation(modified_message, session, action)
 
-    # 3. إذا لم يقم المشرف بتنفيذ أمر، قم بتشغيل فحص الحماية العادي (Anti-Spam)
+    # 3. إذا لم يقم المشرف بتنفيذ أمر، تشغيل فحص الحماية العادي (Anti-Spam)
     if not is_cmd_executed:
         await group_service.check_message(message.bot, session, message)
