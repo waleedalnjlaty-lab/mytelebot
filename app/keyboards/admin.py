@@ -15,6 +15,7 @@ def admin_panel_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="📱 إدارة التطبيقات", callback_data=AdminCB(action="apps", page=0).pack())],
         [InlineKeyboardButton(text="📥 طلبات التطبيقات", callback_data=AdminCB(action="requests", page=0).pack())],
         [InlineKeyboardButton(text="📢 نشر في القناة", callback_data=AdminCB(action="publish_select", page=0).pack())],
+        [InlineKeyboardButton(text="🖼 ترحيل الصور", callback_data=AdminCB(action="migrate_images", page=0).pack())],
         [InlineKeyboardButton(text="👥 إدارة الجروب", callback_data=AdminCB(action="group", page=0).pack())],
         [InlineKeyboardButton(text="📣 إرسال إعلان", callback_data=AdminCB(action="broadcast", page=0).pack())],
         [InlineKeyboardButton(text="⚙️ إعدادات", callback_data=AdminCB(action="settings", page=0).pack())],

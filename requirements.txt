@@ -6,3 +6,4 @@ pydantic-settings>=2,<3
 python-dotenv>=1,<2
 aiofiles>=23,<25
 asyncpg
+aiohttp>=3.8,<4

@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     SHRANKME_LEGACY_API_URL: str = "https://shrinkme.io/api"
     SHRANKME_TIMEOUT: float = 60.0
 
+    # --- ImgBB (رفع الصور) ---
+    IMGBB_API_KEY: str | None = None
+
     # --- قاعدة البيانات ---
     DATABASE_URL: str = DEFAULT_DB_URL
 

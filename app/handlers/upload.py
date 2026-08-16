@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 
 router = Router(name="upload")
 
-imgbb_client = ImgBBUploader(api_key="a0a3a3988c0bb1674a8247aa03dcb0c9")
+imgbb_client = ImgBBUploader(api_key=get_settings().IMGBB_API_KEY or "")
 
 DIRECT_EXTENSIONS = ('.apk', '.zip', '.rar', '.exe', '.bin', '.7z', '.tar', '.gz', '.ipa', '.pdf', '.iso')
 

@@ -360,6 +360,45 @@ async def on_publish_app(
     await _publish_to_channel(call, session, app)
 
 
+@router.callback_query(AdminCB.filter(F.action == "migrate_images"))
+async def on_migrate_images(call: CallbackQuery, session: AsyncSession) -> None:
+    """زر مخصص لترحيل صور التطبيقات من Telegram إلى ImgBB."""
+    if not _guard(call):
+        await call.answer("⛔", show_alert=True)
+        return
+    if not get_settings().IMGBB_API_KEY:
+        await call.answer("⚠️ IMGBB_API_KEY غير موجود في .env", show_alert=True)
+        return
+    await call.answer()
+    status = await call.message.edit_text(
+        "🖼 جاري ترحيل الصور...\nقد يستغرق ذلك بعض الوقت ⏳"
+    )
+    try:
+        from app.services.image_migration import migrate_app_images
+
+        result = await migrate_app_images(call.bot, session)
+    except Exception as exc:
+        logger.error("Migrate images failed: %s", exc, exc_info=True)
+        await status.edit_text(f"❌ فشل ترحيل الصور:\n{escape_html(str(exc))}")
+        return
+
+    if result.total == 0:
+        text = "✅ لا توجد صور بحاجة لترحيل — كل التطبيقات لديها روابط صور."
+    else:
+        text = (
+            "🖼 **نتيجة ترحيل الصور:**\n"
+            f"📦 المجموع: {result.total}\n"
+            f"✅ نجح: {result.migrated}\n"
+            f"❌ فشل: {result.failed}"
+        )
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 لوحة الإدارة", callback_data=AdminCB(action="panel", page=0).pack())]
+        ]
+    )
+    await status.edit_text(text, reply_markup=kb)
+
+
 # ---------------------------------------------------------------- إدارة الجروب
 @router.callback_query(AdminCB.filter(F.action == "group"))
 async def on_group_menu(call: CallbackQuery) -> None:

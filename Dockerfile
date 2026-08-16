@@ -21,8 +21,11 @@ COPY . /app
 # Create runtime folders
 RUN mkdir -p /app/tmp/uploads /app/logs
 
+# Make entrypoint executable
+RUN chmod +x /app/entrypoint.sh
+
 # Create unprivileged user and use it
 RUN useradd --system --no-create-home botuser || true
 USER botuser
 
-ENTRYPOINT ["python", "-u", "main.py"]
+ENTRYPOINT ["/app/entrypoint.sh"]
