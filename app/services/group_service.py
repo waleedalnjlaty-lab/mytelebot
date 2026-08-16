@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
-import asyncio
 from collections import defaultdict, deque
 from datetime import timedelta
 
@@ -31,41 +31,46 @@ class GroupService:
     async def welcome_if_needed(
         self, bot: Bot, session: AsyncSession, event: ChatMemberUpdated
     ) -> None:
-        if not event.new_chat_members:
+        if not event.new_chat_member:
             return
+
+        member = event.new_chat_member.user
+        if member.is_bot:
+            return
+
         enabled = await repo.get_setting_bool(
             session, "welcome_enabled", True
         )
         if not enabled:
             return
+
         template = (
             await repo.get_setting(
                 session, "welcome_message", DEFAULT_SETTINGS["welcome_message"]
             )
             or DEFAULT_SETTINGS["welcome_message"]
         )
-        for member in event.new_chat_members:
-            if member.is_bot:
-                continue
-            username = f"@{member.username}" if member.username else member.full_name
-            text = template.replace("{username}", escape_html(username))
-            text = text.replace("{name}", escape_html(member.full_name))
-            from app.keyboards.user import back_to_menu_keyboard
 
-            await send_with_retry(
-                bot,
-                chat_id=event.chat.id,
-                text=text,
-                reply_markup=back_to_menu_keyboard(),
-            )
-            await repo.add_group_log(
-                session,
-                chat_id=event.chat.id,
-                user_id=member.id,
-                username=member.username,
-                action="join",
-                detail=f"User {member.id} joined",
-            )
+        username = f"@{member.username}" if member.username else member.full_name
+        text = template.replace("{username}", escape_html(username))
+        text = text.replace("{name}", escape_html(member.full_name))
+        
+        from app.keyboards.user import back_to_menu_keyboard
+
+        await send_with_retry(
+            bot,
+            chat_id=event.chat.id,
+            text=text,
+            reply_markup=back_to_menu_keyboard(),
+        )
+        await repo.add_group_log(
+            session,
+            chat_id=event.chat.id,
+            user_id=member.id,
+            username=member.username,
+            action="join",
+            detail=f"User {member.id} joined",
+        )
 
     # ---------------------------------------------------------- الحماية
     async def check_message(
@@ -128,12 +133,7 @@ class GroupService:
         target: Message | None = None,
         reason: str = "سلوك مخالف",
     ) -> str | None:
-        """تحذير عضو (أو مرسل الرسالة إن لم يُحدد target).
-
-        عند فحص Anti-Spam يُمرَّر target=None فيُحذَّر مرسل المخالفة نفسه،
-        وعند أمر /warn يُمرَّر target = الرسالة التي تم الرد عليها.
-        """
-        # الهدف: الرسالة المردود عليها، أو الرسالة نفسها (للمخالفة التلقائية)
+        """تحذير عضو (أو مرسل الرسالة إن لم يُحدد target)."""
         ref = target or message
         user = ref.from_user
         if user is None:
