@@ -160,7 +160,10 @@ async def on_admins(message: Message) -> None:
     await message.reply("\n".join(lines))
 
 
-@router.chat_member(ChatMemberUpdatedFilter(JOIN_TRANSITION))
+@router.chat_member(
+    ChatMemberUpdatedFilter(JOIN_TRANSITION),
+    F.chat.type.in_(["group", "supergroup"]),
+)
 async def on_member_joined(
     event: ChatMemberUpdated, session: AsyncSession
 ) -> None:

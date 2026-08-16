@@ -31,6 +31,8 @@ class GroupService:
     async def welcome_if_needed(
         self, bot: Bot, session: AsyncSession, event: ChatMemberUpdated
     ) -> None:
+        if event.chat.type not in ["group", "supergroup"]:
+            return
         if not event.new_chat_member:
             return
 
