@@ -111,6 +111,7 @@ async def create_application(
     category: str | None = None,
     platform: str | None = None,
     developer: str | None = None,
+    image_url: str | None = None,
     icon_file_id: str | None = None,
     devupload_url: str | None = None,
     shrankme_url: str | None = None,
